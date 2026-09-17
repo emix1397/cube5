@@ -1,1413 +1,588 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Cube Five</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Surface Five</title>
 <style>
-  :root {
-    color-scheme: dark;
-    --bg: #111318;
-    --panel: #1c2028;
-    --panel2: #252b35;
-    --text: #f2f4f8;
-    --muted: #aab3c0;
-    --p1: #ff5b5b;
-    --p2: #4aa3ff;
-    --accent: #ffd166;
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; width: 100%; height: 100%; overflow: hidden;
-    background: var(--bg); color: var(--text);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  }
-  #app {
-    width: 100%; height: 100%;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-  }
-  header {
-    display:flex; align-items:center; justify-content:space-between; gap:14px;
-    padding:10px 14px;
-    background:rgba(17,19,24,.96);
-    border-bottom:1px solid #303641;
-    flex-wrap:wrap;
-  }
-  .title {
-    font-weight:800;
-    letter-spacing:.3px;
-  }
-  .topControls {
-    display:flex;
-    gap:10px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-  .status { font-weight:700; }
-  .status .dot {
-    display:inline-block;
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    margin-right:7px;
-    vertical-align:-1px;
-  }
-  select {
-    background:var(--panel2);
-    color:var(--text);
-    border:1px solid #414956;
-    border-radius:8px;
-    padding:8px 10px;
-    font-weight:700;
-    cursor:pointer;
-  }
-  #stage {
-    position:relative;
-    min-height:0;
-  }
-  canvas {
-    display:block;
-    width:100%;
-    height:100%;
-    touch-action:none;
-  }
-  footer {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    flex-wrap:wrap;
-    padding:10px 14px;
-    background:rgba(17,19,24,.96);
-    border-top:1px solid #303641;
-  }
-  button {
-    border:0;
-    border-radius:9px;
-    padding:10px 16px;
-    font-weight:800;
-    cursor:pointer;
-    background:var(--panel2);
-    color:var(--text);
-  }
-  button.primary {
-    background:var(--accent);
-    color:#171717;
-  }
-  button:disabled {
-    opacity:.4;
-    cursor:not-allowed;
-  }
-
-  @media (pointer:fine) {
-    #placeBtn { display:none; }
-  }
-
-  @media (max-width: 700px) {
-    #app { grid-template-rows: auto 1fr auto; }
-    header { padding: 8px 10px; gap: 8px; }
-    .title { width: 100%; text-align: center; font-size: 18px; }
-    .topControls { width: 100%; justify-content: center; gap: 8px; }
-    .status { width: 100%; text-align: center; order: 3; }
-    footer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
-    #placeBtn { min-width: 140px; min-height: 46px; font-size: 16px; }
-    select, button { min-height: 42px; }
-    #zoomInBtn, #zoomOutBtn { min-width: 46px; font-size: 22px; line-height: 1; }
-  }
+:root{
+  color-scheme:dark;
+  --bg:#111318;--panel:#1c2028;--panel2:#252b35;--text:#f2f4f8;
+  --muted:#aab3c0;--p1:#ff5b5b;--p2:#4aa3ff;--accent:#ffd166;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#app{width:100%;height:100%;display:grid;grid-template-rows:auto 1fr auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--bg);border-bottom:1px solid #303641;flex-wrap:wrap}
+.title{font-weight:800;letter-spacing:.3px}
+.controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+select,button{background:var(--panel2);color:var(--text);border:1px solid #414956;border-radius:8px;padding:8px 10px;font-weight:700;cursor:pointer}
+button{border:0}
+button.primary{background:var(--accent);color:#171717}
+button:disabled{opacity:.4;cursor:not-allowed}
+.status{font-weight:700;min-width:120px;text-align:center}
+.status .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+#stage{position:relative;min-height:0}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+footer{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid #303641}
+#zoomInBtn,#zoomOutBtn{min-width:46px;font-size:22px;line-height:1}
+@media(pointer:fine){#placeBtn{display:none}}
+@media(max-width:760px){
+  .title{width:100%;text-align:center;font-size:17px}
+  .controls{width:100%;justify-content:center}
+  .status{width:100%;order:10}
+  select,button{min-height:40px;padding:7px 9px}
+  #placeBtn{min-width:140px;min-height:46px;font-size:16px}
+}
 </style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <div class="title">Cube Five</div>
-
-    <div class="topControls">
-      <select id="sizeSelect" aria-label="Cube size">
-        <option value="3" selected>3 × 3</option>
-        <option value="4">4 × 4</option>
-        <option value="5">5 × 5</option>
-      </select>
-
-      <select id="modeSelect" aria-label="Game mode">
-        <option value="solo" selected>Solo vs Computer</option>
-        <option value="hotseat">Two-player Hot Seat</option>
-      </select>
-
-      <select id="difficultySelect" aria-label="Difficulty">
-        <option value="easy" selected>Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-      <select id="themeSelect" aria-label="Theme">
-        <option value="classic" selected>Classic</option>
-        <option value="neon">Neon</option>
-        <option value="light">Light</option>
-      </select>
-
-      <div id="status" class="status"></div>
-      <button id="undoBtn" disabled>Undo</button>
-      <button id="redoBtn" disabled>Redo</button>
-      <button id="resetBtn">New game</button>
-    </div>
-  </header>
-
-  <div id="stage">
-    <canvas id="game"></canvas>
+<header>
+  <div class="title">Surface Five</div>
+  <div class="controls">
+    <select id="shapeSelect" aria-label="Shape">
+      <option value="cube3" selected>Cube 3×3</option>
+      <option value="cube4">Cube 4×4</option>
+      <option value="cube5">Cube 5×5</option>
+      <option value="cuboid10x2">Cuboid 10×2</option>
+      <option value="cylinder">Cylinder</option>
+      <option value="sphere">Sphere</option>
+    </select>
+    <select id="modeSelect" aria-label="Game mode">
+      <option value="solo" selected>Solo vs Computer</option>
+      <option value="hotseat">Two-player Hot Seat</option>
+    </select>
+    <select id="difficultySelect" aria-label="Difficulty">
+      <option value="easy" selected>Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+    <select id="themeSelect" aria-label="Theme">
+      <option value="classic" selected>Classic</option>
+      <option value="neon">Neon</option>
+      <option value="light">Light</option>
+    </select>
+    <div id="status" class="status"></div>
+    <button id="undoBtn" disabled>Undo</button>
+    <button id="redoBtn" disabled>Redo</button>
+    <button id="resetBtn">New</button>
   </div>
+</header>
 
-  <footer>
-    <button id="zoomOutBtn" aria-label="Zoom out">−</button>
-    <button id="placeBtn" class="primary" disabled>Place Tile</button>
-    <button id="zoomInBtn" aria-label="Zoom in">+</button>
-  </footer>
+<div id="stage"><canvas id="game"></canvas></div>
+
+<footer>
+  <button id="zoomOutBtn" aria-label="Zoom out">−</button>
+  <button id="placeBtn" class="primary" disabled>Place Tile</button>
+  <button id="zoomInBtn" aria-label="Zoom in">+</button>
+</footer>
 </div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-let N = 3;
-const WIN_LENGTH = 5;
+const WIN_LENGTH=5, P1=1, P2=2, CELL=1, GAP=.055;
+const canvas=document.getElementById('game');
+const stage=document.getElementById('stage');
+const statusEl=document.getElementById('status');
+const placeBtn=document.getElementById('placeBtn');
+const undoBtn=document.getElementById('undoBtn');
+const redoBtn=document.getElementById('redoBtn');
+const resetBtn=document.getElementById('resetBtn');
+const shapeSelect=document.getElementById('shapeSelect');
+const modeSelect=document.getElementById('modeSelect');
+const difficultySelect=document.getElementById('difficultySelect');
+const themeSelect=document.getElementById('themeSelect');
+const zoomInBtn=document.getElementById('zoomInBtn');
+const zoomOutBtn=document.getElementById('zoomOutBtn');
 
-const CELL = 1;
-const GAP = 0.035;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+scene.add(new THREE.HemisphereLight(0xffffff,0x263244,2.1));
+const dl=new THREE.DirectionalLight(0xffffff,2.5);dl.position.set(7,9,8);scene.add(dl);
+const boardGroup=new THREE.Group();scene.add(boardGroup);
 
-const P1 = 1;
-const P2 = 2;
-
-const colors = {
-  face: 0x343b48,
-  p1: 0xff5b5b,
-  p2: 0x4aa3ff,
-  select: 0xffd166,
-  win: 0x6ef29c
+const colors={face:0x343b48,p1:0xff5b5b,p2:0x4aa3ff,select:0xffd166,win:0x6ef29c};
+const THEMES={
+ classic:{css:{'--bg':'#111318','--panel2':'#252b35','--text':'#f2f4f8','--accent':'#ffd166'},bg:0x111318,face:0x343b48,core:0x20252d,p1:0xff5b5b,p2:0x4aa3ff,select:0xffd166,win:0x6ef29c},
+ neon:{css:{'--bg':'#05070d','--panel2':'#131b2d','--text':'#f5fbff','--accent':'#c9ff2f'},bg:0x05070d,face:0x182136,core:0x0b1020,p1:0xff3cf0,p2:0x00e5ff,select:0xc9ff2f,win:0x65ff87},
+ light:{css:{'--bg':'#e9edf3','--panel2':'#dfe5ee','--text':'#1b2430','--accent':'#e8b125'},bg:0xe9edf3,face:0xb8c1cc,core:0x909aa6,p1:0xd63b3b,p2:0x2d78d0,select:0xe8b125,win:0x31a866}
 };
 
-const THEMES = {
-  classic: {
-    css: {'--bg':'#111318','--panel':'#1c2028','--panel2':'#252b35','--text':'#f2f4f8','--muted':'#aab3c0','--p1':'#ff5b5b','--p2':'#4aa3ff','--accent':'#ffd166'},
-    sceneBg:0x111318, face:0x343b48, core:0x20252d, p1:0xff5b5b, p2:0x4aa3ff, select:0xffd166, win:0x6ef29c
-  },
-  neon: {
-    css: {'--bg':'#05070d','--panel':'#0d1220','--panel2':'#131b2d','--text':'#f5fbff','--muted':'#93a6bd','--p1':'#ff3cf0','--p2':'#00e5ff','--accent':'#c9ff2f'},
-    sceneBg:0x05070d, face:0x182136, core:0x0b1020, p1:0xff3cf0, p2:0x00e5ff, select:0xc9ff2f, win:0x65ff87
-  },
-  light: {
-    css: {'--bg':'#e9edf3','--panel':'#f7f9fc','--panel2':'#dfe5ee','--text':'#1b2430','--muted':'#5e6a78','--p1':'#d63b3b','--p2':'#2d78d0','--accent':'#e8b125'},
-    sceneBg:0xe9edf3, face:0xb8c1cc, core:0x909aa6, p1:0xd63b3b, p2:0x2d78d0, select:0xe8b125, win:0x31a866
-  }
+const BOX_BASES={
+ F:{n:[0,0,1],r:[1,0,0],d:[0,-1,0]},
+ B:{n:[0,0,-1],r:[-1,0,0],d:[0,-1,0]},
+ R:{n:[1,0,0],r:[0,0,-1],d:[0,-1,0]},
+ L:{n:[-1,0,0],r:[0,0,1],d:[0,-1,0]},
+ U:{n:[0,1,0],r:[1,0,0],d:[0,0,1]},
+ D:{n:[0,-1,0],r:[1,0,0],d:[0,0,-1]}
 };
+const faceNames=Object.keys(BOX_BASES);
+const V=a=>new THREE.Vector3(...a);
+const key=(face,row,col)=>`${face}:${row}:${col}`;
 
-function applyTheme(name) {
-  const theme = THEMES[name] || THEMES.classic;
-  for (const [prop,value] of Object.entries(theme.css)) {
-    document.documentElement.style.setProperty(prop, value);
-  }
-  colors.face = theme.face;
-  colors.p1 = theme.p1;
-  colors.p2 = theme.p2;
-  colors.select = theme.select;
-  colors.win = theme.win;
-  renderer.setClearColor(theme.sceneBg, 1);
-  if (core && core.material) core.material.color.setHex(theme.core);
-  refreshAll();
-  updateStatus();
+let shape={type:'box',dims:{x:3,y:3,z:3}};
+let gameMode='solo',difficulty='easy',currentPlayer=P1,gameOver=false,aiThinking=false;
+let selected=null,winningKeys=new Set(),moveHistory=[],redoStack=[];
+let core=null,viewRadius=3,zoomFactor=1;
+const board={};
+const cellMeshes=new Map();
+const occluders=[];
+
+function disposeObject(o){o.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material){(Array.isArray(c.material)?c.material:[c.material]).forEach(m=>m.dispose())}})}
+function clearBoard(){
+  while(boardGroup.children.length){const c=boardGroup.children.pop();disposeObject(c)}
+  for(const k of Object.keys(board))delete board[k];
+  cellMeshes.clear();occluders.length=0;core=null;
+}
+function playerHex(p){return p===P1?colors.p1:colors.p2}
+function cssHex(n){return '#'+n.toString(16).padStart(6,'0')}
+
+function applyTheme(name){
+ const t=THEMES[name]||THEMES.classic;
+ for(const [k,v] of Object.entries(t.css))document.documentElement.style.setProperty(k,v);
+ Object.assign(colors,{face:t.face,p1:t.p1,p2:t.p2,select:t.select,win:t.win});
+ renderer.setClearColor(t.bg,1);
+ if(core?.material)core.material.color.setHex(t.core);
+ refreshAll();updateStatus();
 }
 
-const FACES = {
-  F: { n:[ 0, 0, 1], r:[ 1, 0, 0], d:[ 0,-1, 0] },
-  B: { n:[ 0, 0,-1], r:[-1, 0, 0], d:[ 0,-1, 0] },
-  R: { n:[ 1, 0, 0], r:[ 0, 0,-1], d:[ 0,-1, 0] },
-  L: { n:[-1, 0, 0], r:[ 0, 0, 1], d:[ 0,-1, 0] },
-  U: { n:[ 0, 1, 0], r:[ 1, 0, 0], d:[ 0, 0, 1] },
-  D: { n:[ 0,-1, 0], r:[ 1, 0, 0], d:[ 0, 0,-1] }
-};
-
-const faceNames = Object.keys(FACES);
-
-function V(a) {
-  return new THREE.Vector3(...a);
+function addBoardCell(k,mesh,data){
+ mesh.userData={kind:'cell',...data};boardGroup.add(mesh);cellMeshes.set(k,mesh);board[k]=0;
 }
 
-function key(face,row,col) {
-  return `${face}:${row}:${col}`;
+function boxFaceMeta(face){
+ const {x,y,z}=shape.dims;
+ if(face==='F'||face==='B')return{rows:y,cols:x,half:z/2};
+ if(face==='R'||face==='L')return{rows:y,cols:z,half:x/2};
+ return{rows:z,cols:x,half:y/2};
+}
+function worldPointBox(face,row,col,out=.025){
+ const b=BOX_BASES[face],m=boxFaceMeta(face);
+ return V(b.n).multiplyScalar(m.half+out)
+  .add(V(b.r).multiplyScalar(col-(m.cols-1)/2))
+  .add(V(b.d).multiplyScalar(row-(m.rows-1)/2));
+}
+function makeBoxCell(face,row,col){
+ const b=BOX_BASES[face],geom=new THREE.PlaneGeometry(CELL-GAP*2,CELL-GAP*2);
+ const mat=new THREE.MeshStandardMaterial({color:colors.face,roughness:.8,metalness:.04,side:THREE.DoubleSide});
+ const mesh=new THREE.Mesh(geom,mat);
+ const basis=new THREE.Matrix4().makeBasis(V(b.r),V(b.d).negate(),V(b.n));
+ mesh.setRotationFromMatrix(basis);mesh.position.copy(worldPointBox(face,row,col));
+ addBoardCell(key(face,row,col),mesh,{face,row,col});
+}
+function buildBox(x,y,z){
+ shape={type:'box',dims:{x,y,z}};
+ core=new THREE.Mesh(new THREE.BoxGeometry(x,y,z),new THREE.MeshStandardMaterial({color:THEMES[themeSelect.value].core,roughness:.9}));
+ core.userData={kind:'core'};boardGroup.add(core);occluders.push(core);
+ for(const f of faceNames){const m=boxFaceMeta(f);for(let r=0;r<m.rows;r++)for(let c=0;c<m.cols;c++)makeBoxCell(f,r,c)}
+ viewRadius=Math.sqrt(x*x+y*y+z*z)/2;
 }
 
-function signRound(x) {
-  if (Math.abs(x) < 0.5) return 0;
-  return x > 0 ? 1 : -1;
+function quadGeometry(a,b,c,d){
+ const g=new THREE.BufferGeometry();
+ const verts=new Float32Array([...a.toArray(),...b.toArray(),...c.toArray(),...d.toArray()]);
+ g.setAttribute('position',new THREE.BufferAttribute(verts,3));
+ g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();return g;
+}
+function cylinderTileGeometry(radius, yTop, yBottom, aLeft, aRight, arcSegments=4, ySegments=2){
+ const verts=[],indices=[];
+
+ for(let r=0;r<=ySegments;r++){
+   const t=r/ySegments;
+   const y=yTop+(yBottom-yTop)*t;
+
+   for(let c=0;c<=arcSegments;c++){
+     const u=c/arcSegments;
+     const a=aLeft+(aRight-aLeft)*u;
+     verts.push(
+       radius*Math.sin(a),
+       y,
+       radius*Math.cos(a)
+     );
+   }
+ }
+
+ const cols=arcSegments+1;
+
+ for(let r=0;r<ySegments;r++){
+   for(let c=0;c<arcSegments;c++){
+     const i=r*cols+c;
+     const a=i;
+     const b=i+1;
+     const d=i+cols;
+     const e=d+1;
+     indices.push(a,d,b,b,d,e);
+   }
+ }
+
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+ g.setIndex(indices);
+ g.computeVertexNormals();
+ return g;
 }
 
-const canvas = document.getElementById('game');
-const stage = document.getElementById('stage');
-const statusEl = document.getElementById('status');
-const placeBtn = document.getElementById('placeBtn');
-const resetBtn = document.getElementById('resetBtn');
-const undoBtn = document.getElementById('undoBtn');
-const redoBtn = document.getElementById('redoBtn');
-const sizeSelect = document.getElementById('sizeSelect');
-const modeSelect = document.getElementById('modeSelect');
-const difficultySelect = document.getElementById('difficultySelect');
-const themeSelect = document.getElementById('themeSelect');
-const zoomInBtn = document.getElementById('zoomInBtn');
-const zoomOutBtn = document.getElementById('zoomOutBtn');
+function buildCylinder(){
+ shape={type:'cylinder',rows:6,cols:16,radius:3,height:6};
+ const {rows,cols,radius,height}=shape;
 
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setClearColor(0x111318, 1);
+ // Solid cylinder just inside the tile shell. It blocks clicks through gaps,
+ // but must stay behind the curved tile patches.
+ core=new THREE.Mesh(
+   new THREE.CylinderGeometry(radius,radius,height,64,1,false),
+   new THREE.MeshStandardMaterial({
+     color:THEMES[themeSelect.value].core,
+     roughness:.9
+   })
+ );
+ core.userData={kind:'core'};
+ boardGroup.add(core);
+ occluders.push(core);
 
-const scene = new THREE.Scene();
+ const R=radius+.045;
 
-const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-camera.position.set(8.2, 7.2, 8.5);
-camera.lookAt(0,0,0);
+ for(let r=0;r<rows;r++){
+   for(let c=0;c<cols;c++){
+     const rawLeft=2*Math.PI*c/cols;
+     const rawRight=2*Math.PI*(c+1)/cols;
 
-let zoomFactor = 1.0;
-const MIN_ZOOM = 0.65;
-const MAX_ZOOM = 1.8;
+     const rawTop=height/2-r*height/rows;
+     const rawBottom=height/2-(r+1)*height/rows;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x263244, 2.1));
+     // Inset the patch slightly to keep the visible gaps.
+     const aInset=(rawRight-rawLeft)*0.045;
+     const yInset=(rawTop-rawBottom)*0.045;
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-dirLight.position.set(6,9,7);
-scene.add(dirLight);
+     const aLeft=rawLeft+aInset;
+     const aRight=rawRight-aInset;
+     const yTop=rawTop-yInset;
+     const yBottom=rawBottom+yInset;
 
-const cubeGroup = new THREE.Group();
-scene.add(cubeGroup);
+     // Build a genuinely curved cylindrical patch instead of a flat quad.
+     // This prevents the solid cylinder core from poking through the middle.
+     const geom=cylinderTileGeometry(
+       R,
+       yTop,
+       yBottom,
+       aLeft,
+       aRight,
+       4,
+       2
+     );
 
-const board = {};
-const cellMeshes = new Map();
+     const mesh=new THREE.Mesh(
+       geom,
+       new THREE.MeshStandardMaterial({
+         color:colors.face,
+         roughness:.8,
+         side:THREE.DoubleSide
+       })
+     );
 
-let currentPlayer = P1;
-let gameOver = false;
-let selected = null;
-let winningKeys = new Set();
-let moveHistory = [];
-let redoStack = [];
-let core = null;
-let gameMode = 'solo';
-let difficulty = 'easy';
-let aiThinking = false;
+     addBoardCell(
+       key('CYL',r,c),
+       mesh,
+       {face:'CYL',row:r,col:c}
+     );
+   }
+ }
 
-function getHalf() {
-  return N / 2;
+ viewRadius=Math.sqrt(radius*radius+(height/2)**2);
+}
+function spherePoint(radius,lat,lon){
+ const cl=Math.cos(lat);return new THREE.Vector3(radius*cl*Math.sin(lon),radius*Math.sin(lat),radius*cl*Math.cos(lon));
+}
+function sphereTileGeometry(radius, latTop, latBottom, lonLeft, lonRight, segments=4){
+ const verts=[],indices=[];
+ const rows=segments,cols=segments;
+
+ for(let r=0;r<=rows;r++){
+   const t=r/rows;
+   const lat=latTop+(latBottom-latTop)*t;
+
+   for(let c=0;c<=cols;c++){
+     const u=c/cols;
+     const lon=lonLeft+(lonRight-lonLeft)*u;
+     const p=spherePoint(radius,lat,lon);
+     verts.push(p.x,p.y,p.z);
+   }
+ }
+
+ for(let r=0;r<rows;r++){
+   for(let c=0;c<cols;c++){
+     const a=r*(cols+1)+c;
+     const b=a+1;
+     const d=(r+1)*(cols+1)+c;
+     const e=d+1;
+     indices.push(a,d,b,b,d,e);
+   }
+ }
+
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+ g.setIndex(indices);
+ g.computeVertexNormals();
+ return g;
 }
 
-function getFaceOffset() {
-  return getHalf() + 0.015;
+function buildSphere(){
+ shape={type:'sphere',rows:8,cols:16,radius:3.3};
+ const {rows,cols,radius}=shape;
+
+ // The core remains just inside the curved tile shell and acts as the
+ // gap occluder, so clicks between tiles cannot pass through to the rear.
+ core=new THREE.Mesh(
+   new THREE.SphereGeometry(radius,64,32),
+   new THREE.MeshStandardMaterial({
+     color:THEMES[themeSelect.value].core,
+     roughness:.9
+   })
+ );
+ core.userData={kind:'core'};
+ boardGroup.add(core);
+ occluders.push(core);
+
+ const minLat=-Math.PI*5/12;
+ const maxLat= Math.PI*5/12;
+ const R=radius+.045;
+
+ for(let r=0;r<rows;r++){
+   for(let c=0;c<cols;c++){
+     const rawTop=maxLat-(maxLat-minLat)*r/rows;
+     const rawBottom=maxLat-(maxLat-minLat)*(r+1)/rows;
+     const rawLeft=2*Math.PI*c/cols;
+     const rawRight=2*Math.PI*(c+1)/cols;
+
+     // Inset each tile slightly in angular space to preserve visible gaps.
+     // Unlike the old four-corner planar quad, this creates a genuinely
+     // curved spherical patch, so the sphere core cannot poke through its center.
+     const latInset=(rawTop-rawBottom)*0.045;
+     const lonInset=(rawRight-rawLeft)*0.045;
+
+     const latTop=rawTop-latInset;
+     const latBottom=rawBottom+latInset;
+     const lonLeft=rawLeft+lonInset;
+     const lonRight=rawRight-lonInset;
+
+     const geom=sphereTileGeometry(
+       R,
+       latTop,
+       latBottom,
+       lonLeft,
+       lonRight,
+       4
+     );
+
+     const mesh=new THREE.Mesh(
+       geom,
+       new THREE.MeshStandardMaterial({
+         color:colors.face,
+         roughness:.8,
+         side:THREE.DoubleSide
+       })
+     );
+
+     addBoardCell(
+       key('SPH',r,c),
+       mesh,
+       {face:'SPH',row:r,col:c}
+     );
+   }
+ }
+
+ viewRadius=radius;
+}
+function buildSelectedShape(){
+ clearBoard();
+ const s=shapeSelect.value;
+ if(s==='cube3')buildBox(3,3,3);
+ else if(s==='cube4')buildBox(4,4,4);
+ else if(s==='cube5')buildBox(5,5,5);
+ else if(s==='cuboid10x2')buildBox(10,2,2);
+ else if(s==='cylinder')buildCylinder();
+ else buildSphere();
+ applyTheme(themeSelect.value);
+ applyCameraPosition();
 }
 
-function getTileSize() {
-  return CELL - GAP * 2;
+function setCellVisual(face,row,col){
+ const k=key(face,row,col),mesh=cellMeshes.get(k);if(!mesh)return;
+ let tileColor=board[k]?playerHex(board[k]):colors.face;
+ if(winningKeys.has(k))tileColor=colors.win;
+ else if(selected&&selected.face===face&&selected.row===row&&selected.col===col)tileColor=colors.select;
+ mesh.material.color.setHex(tileColor);
+}
+function refreshAll(){
+ for(const [k,m] of cellMeshes){const d=m.userData;let col=board[k]?playerHex(board[k]):colors.face;if(winningKeys.has(k))col=colors.win;else if(selected&&selected.face===d.face&&selected.row===d.row&&selected.col===d.col)col=colors.select;m.material.color.setHex(col)}
+}
+function updateStatus(text=null){
+ if(text){statusEl.innerHTML=text;return}
+ const dot=cssHex(playerHex(currentPlayer));
+ const label=gameMode==='solo'?(currentPlayer===P1?'Your turn':'Computer thinking...'):`Player ${currentPlayer}'s turn`;
+ statusEl.innerHTML=`<span class="dot" style="background:${dot}"></span>${label}`;
+}
+function updateHistoryButtons(){undoBtn.disabled=!moveHistory.length||aiThinking;redoBtn.disabled=!redoStack.length||aiThinking}
+
+function findFaceByNormal(vec){let best=null,bd=-Infinity;for(const f of faceNames){const d=V(BOX_BASES[f].n).dot(vec);if(d>bd){bd=d;best=f}}return best}
+function rotateQuarter(v,axis,oldN,newN){
+ const p=v.clone().applyAxisAngle(axis,Math.PI/2),m=v.clone().applyAxisAngle(axis,-Math.PI/2);
+ const pn=oldN.clone().applyAxisAngle(axis,Math.PI/2),mn=oldN.clone().applyAxisAngle(axis,-Math.PI/2);
+ return pn.dot(newN)>mn.dot(newN)?p:m;
+}
+function sround(x){return Math.abs(x)<.5?0:(x>0?1:-1)}
+function stepBox(state){
+ const {face,row,col,dr,dc}=state,m=boxFaceMeta(face);
+ let nr=row+dr,nc=col+dc;
+ if(nr>=0&&nr<m.rows&&nc>=0&&nc<m.cols)return{face,row:nr,col:nc,dr,dc};
+ const crossR=nr<0||nr>=m.rows,crossC=nc<0||nc>=m.cols;if(crossR&&crossC)return null;
+ const b=BOX_BASES[face],n=V(b.n),rv=V(b.r),dv=V(b.d);
+ const move=rv.clone().multiplyScalar(dc).add(dv.clone().multiplyScalar(dr));
+ let edgeOut,axis,edgeCenter;
+ if(crossC){
+   const s=nc<0?-1:1;edgeOut=rv.clone().multiplyScalar(s);axis=dv.clone();
+   edgeCenter=n.clone().multiplyScalar(m.half).add(rv.clone().multiplyScalar(s*m.cols/2)).add(dv.clone().multiplyScalar(row-(m.rows-1)/2));
+ }else{
+   const s=nr<0?-1:1;edgeOut=dv.clone().multiplyScalar(s);axis=rv.clone();
+   edgeCenter=n.clone().multiplyScalar(m.half).add(dv.clone().multiplyScalar(s*m.rows/2)).add(rv.clone().multiplyScalar(col-(m.cols-1)/2));
+ }
+ const nf=findFaceByNormal(edgeOut),nb=BOX_BASES[nf],nn=V(nb.n),nrv=V(nb.r),ndv=V(nb.d),nm=boxFaceMeta(nf);
+ const moved=rotateQuarter(move,axis.clone().normalize(),n,nn),ndr=sround(moved.dot(ndv)),ndc=sround(moved.dot(nrv));
+ const p=worldPointBox(face,row,col,0),target=p.clone().add(move),folded=rotateQuarter(target.clone().sub(edgeCenter),axis.clone().normalize(),n,nn).add(edgeCenter);
+ const rr=Math.round(folded.dot(ndv)+(nm.rows-1)/2),cc=Math.round(folded.dot(nrv)+(nm.cols-1)/2);
+ if(rr<0||rr>=nm.rows||cc<0||cc>=nm.cols)return null;
+ return{face:nf,row:rr,col:cc,dr:ndr,dc:ndc};
+}
+function stepWrapped(state,rows,cols,face){
+ const nr=state.row+state.dr;if(nr<0||nr>=rows)return null;
+ const nc=((state.col+state.dc)%cols+cols)%cols;
+ return{face,row:nr,col:nc,dr:state.dr,dc:state.dc};
+}
+function stepCell(state){
+ if(shape.type==='box')return stepBox(state);
+ if(shape.type==='cylinder')return stepWrapped(state,shape.rows,shape.cols,'CYL');
+ return stepWrapped(state,shape.rows,shape.cols,'SPH');
+}
+const DIRS=[{dr:0,dc:1},{dr:1,dc:0},{dr:1,dc:1},{dr:1,dc:-1}];
+function walk(start,dir,player){
+ const out=[],seen=new Set([key(start.face,start.row,start.col)]);let s={...start,...dir};
+ for(let i=0;i<64;i++){s=stepCell(s);if(!s)break;const k=key(s.face,s.row,s.col);if(seen.has(k)||board[k]!==player)break;seen.add(k);out.push({...s,key:k})}return out;
+}
+function checkWinFrom(face,row,col,player){
+ const origin={face,row,col,key:key(face,row,col)};
+ for(const d of DIRS){const f=walk(origin,d,player),b=walk(origin,{dr:-d.dr,dc:-d.dc},player);const line=[...b.reverse(),origin,...f];if(line.length>=WIN_LENGTH)return line}return null;
 }
 
-function clearObject(obj) {
-  for (const key of Object.keys(obj)) delete obj[key];
+function getEmpty(){const a=[];for(const [k,m] of cellMeshes)if(board[k]===0)a.push({face:m.userData.face,row:m.userData.row,col:m.userData.col});return a}
+function wouldWin(m,p){const k=key(m.face,m.row,m.col);if(board[k])return false;board[k]=p;const w=!!checkWinFrom(m.face,m.row,m.col,p);board[k]=0;return w}
+function lineStrength(m,p){
+ const k=key(m.face,m.row,m.col);if(board[k])return-Infinity;board[k]=p;let best=0,total=0;
+ for(const d of DIRS){const o={...m,key:k},run=1+walk(o,d,p).length+walk(o,{dr:-d.dr,dc:-d.dc},p).length;best=Math.max(best,run);total+=run*run}
+ board[k]=0;return best*1000+total;
+}
+function chooseAI(){
+ const empty=getEmpty();if(!empty.length)return null;
+ for(const m of empty)if(wouldWin(m,P2))return m;
+ const blocks=empty.filter(m=>wouldWin(m,P1));
+ if(difficulty==='easy'){if(blocks.length&&Math.random()<.55)return blocks[Math.floor(Math.random()*blocks.length)];return empty[Math.floor(Math.random()*empty.length)]}
+ if(blocks.length)return blocks[0];
+ if(difficulty==='medium'){
+   let scored=empty.map(m=>({m,s:lineStrength(m,P2)+lineStrength(m,P1)*.55})).sort((a,b)=>b.s-a.s);
+   return scored[Math.floor(Math.random()*Math.min(4,scored.length))].m;
+ }
+ // HARD: defense-first. Apart from an immediate winning move, blocking the
+ // player's strongest continuation dominates its own offensive preference.
+ let best=empty[0],bs=-Infinity;
+ for(const m of empty){const threat=lineStrength(m,P1),attack=lineStrength(m,P2),score=threat*100+attack;if(score>bs){bs=score;best=m}}
+ return best;
 }
 
-function disposeObject3D(object) {
-  object.traverse(child => {
-    if (child.geometry) child.geometry.dispose();
-
-    if (child.material) {
-      if (Array.isArray(child.material)) {
-        child.material.forEach(m => m.dispose());
-      } else {
-        child.material.dispose();
-      }
-    }
-  });
+function finishMove(move,player,isAI=false){
+ const k=key(move.face,move.row,move.col);board[k]=player;moveHistory.push({...move,player});redoStack=[];selected=null;placeBtn.disabled=true;
+ const win=checkWinFrom(move.face,move.row,move.col,player);
+ if(win){gameOver=true;winningKeys=new Set(win.map(x=>x.key));refreshAll();updateHistoryButtons();updateStatus(`<span class="dot" style="background:${cssHex(playerHex(player))}"></span>${gameMode==='solo'&&player===P2?'Computer':`Player ${player}`} wins!`);return}
+ currentPlayer=player===P1?P2:P1;refreshAll();updateStatus();updateHistoryButtons();
+ if(gameMode==='solo'&&currentPlayer===P2&&!isAI)scheduleAI();
+}
+function place(face,row,col){
+ if(gameOver||aiThinking||(gameMode==='solo'&&currentPlayer===P2))return;
+ const k=key(face,row,col);if(board[k])return;finishMove({face,row,col},currentPlayer,false);
+}
+function scheduleAI(){
+ if(gameMode!=='solo'||currentPlayer!==P2||gameOver||aiThinking)return;
+ aiThinking=true;updateStatus();updateHistoryButtons();placeBtn.disabled=true;
+ setTimeout(()=>{const m=chooseAI();aiThinking=false;if(m&&!gameOver)finishMove(m,P2,true);else updateHistoryButtons()},280);
+}
+function selectCell(mesh){
+ if(gameOver||aiThinking||(gameMode==='solo'&&currentPlayer===P2))return;
+ const {face,row,col}=mesh.userData;if(board[key(face,row,col)])return;selected={face,row,col};placeBtn.disabled=false;refreshAll();
 }
 
-function clearCubeGroup() {
-  while (cubeGroup.children.length) {
-    const child = cubeGroup.children.pop();
-    disposeObject3D(child);
-  }
-  cellMeshes.clear();
-  clearObject(board);
+function undoOne(){if(!moveHistory.length)return null;const m=moveHistory.pop();board[key(m.face,m.row,m.col)]=0;redoStack.push(m);return m}
+function undoMove(){
+ if(aiThinking||!moveHistory.length)return;
+ let m=undoOne();if(gameMode==='solo'&&m?.player===P2&&moveHistory.at(-1)?.player===P1)undoOne();
+ gameOver=false;winningKeys.clear();selected=null;placeBtn.disabled=true;currentPlayer=gameMode==='solo'?P1:(moveHistory.length?(moveHistory.at(-1).player===P1?P2:P1):P1);refreshAll();updateStatus();updateHistoryButtons();
+}
+function redoOne(){
+ if(!redoStack.length)return null;const m=redoStack.pop();board[key(m.face,m.row,m.col)]=m.player;moveHistory.push(m);return m;
+}
+function redoMove(){
+ if(aiThinking||!redoStack.length||gameOver)return;
+ const first=redoOne();let last=first;if(gameMode==='solo'&&first?.player===P1&&redoStack.at(-1)?.player===P2)last=redoOne();
+ const win=checkWinFrom(last.face,last.row,last.col,last.player);if(win){gameOver=true;winningKeys=new Set(win.map(x=>x.key));currentPlayer=last.player}else currentPlayer=last.player===P1?P2:P1;
+ refreshAll();updateStatus(gameOver?`<span class="dot" style="background:${cssHex(playerHex(last.player))}"></span>${last.player===P2&&gameMode==='solo'?'Computer':`Player ${last.player}`} wins!`:null);updateHistoryButtons();
+}
+function resetGame(resetOrientation=true){
+ currentPlayer=P1;gameOver=false;aiThinking=false;selected=null;winningKeys.clear();moveHistory=[];redoStack=[];placeBtn.disabled=true;
+ for(const k of Object.keys(board))board[k]=0;
+ if(resetOrientation)boardGroup.rotation.set(-.35,.55,.08);
+ refreshAll();updateStatus();updateHistoryButtons();
 }
 
-function worldPoint(face,row,col,outward=0) {
-  const b = FACES[face];
-  const n = V(b.n);
-  const r = V(b.r);
-  const d = V(b.d);
-
-  const x = (col - (N-1)/2) * CELL;
-  const y = (row - (N-1)/2) * CELL;
-
-  return n.multiplyScalar(getFaceOffset() + outward)
-          .add(r.multiplyScalar(x))
-          .add(d.multiplyScalar(y));
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+function pickCell(x,y){
+ const rect=canvas.getBoundingClientRect();pointer.x=((x-rect.left)/rect.width)*2-1;pointer.y=-((y-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);
+ const hits=raycaster.intersectObjects([...cellMeshes.values(),...occluders],false);
+ if(!hits.length)return null;return hits[0].object.userData?.kind==='cell'?hits[0].object:null;
 }
 
-function makeCell(face,row,col) {
-  const b = FACES[face];
-
-  const n = V(b.n);
-  const r = V(b.r);
-  const d = V(b.d);
-
-  const geom = new THREE.PlaneGeometry(getTileSize(), getTileSize());
-
-  const mat = new THREE.MeshStandardMaterial({
-    color:colors.face,
-    roughness:0.8,
-    metalness:0.04,
-    side:THREE.DoubleSide
-  });
-
-  const mesh = new THREE.Mesh(geom, mat);
-
-  const m = new THREE.Matrix4().makeBasis(
-    r,
-    d.clone().negate(),
-    n
-  );
-
-  mesh.setRotationFromMatrix(m);
-  mesh.position.copy(worldPoint(face,row,col,0.025));
-
-  mesh.userData = {
-    kind:'cell',
-    face,
-    row,
-    col
-  };
-
-  cubeGroup.add(mesh);
-
-  const k = key(face,row,col);
-  cellMeshes.set(k, mesh);
-  board[k] = 0;
+function rotateCubeByDrag(dx,dy){
+ const s=.009,right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion).normalize(),up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion).normalize();
+ const qy=new THREE.Quaternion().setFromAxisAngle(up,dx*s),qp=new THREE.Quaternion().setFromAxisAngle(right,dy*s);
+ boardGroup.quaternion.premultiply(qy);boardGroup.quaternion.premultiply(qp);boardGroup.quaternion.normalize();
 }
-function buildBoard() {
-  clearCubeGroup();
+let dragging=false,moved=false,activePointer=null,downX=0,downY=0,lastX=0,lastY=0;
+canvas.addEventListener('pointerdown',e=>{if(activePointer!==null)return;activePointer=e.pointerId;dragging=true;moved=false;downX=lastX=e.clientX;downY=lastY=e.clientY;try{canvas.setPointerCapture(e.pointerId)}catch{};e.preventDefault()},{passive:false});
+canvas.addEventListener('pointermove',e=>{if(!dragging||e.pointerId!==activePointer)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.hypot(e.clientX-downX,e.clientY-downY)>9)moved=true;if(moved)rotateCubeByDrag(dx,dy);lastX=e.clientX;lastY=e.clientY;e.preventDefault()},{passive:false});
+canvas.addEventListener('pointerup',e=>{if(e.pointerId!==activePointer)return;const wasMoved=moved;dragging=false;activePointer=null;try{canvas.releasePointerCapture(e.pointerId)}catch{};if(!wasMoved&&(e.pointerType==='touch'||e.pointerType==='pen')){const h=pickCell(e.clientX,e.clientY);if(h)selectCell(h)}e.preventDefault()},{passive:false});
+canvas.addEventListener('pointercancel',()=>{dragging=false;activePointer=null});
+canvas.addEventListener('dblclick',e=>{const h=pickCell(e.clientX,e.clientY);if(h){const d=h.userData;place(d.face,d.row,d.col)}});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
-  core = new THREE.Mesh(
-    new THREE.BoxGeometry(N, N, N),
-    new THREE.MeshStandardMaterial({
-      color:0x20252d,
-      roughness:0.85,
-      metalness:0.05
-    })
-  );
-  cubeGroup.add(core);
-
-  for (const face of faceNames) {
-    for (let row=0; row<N; row++) {
-      for (let col=0; col<N; col++) {
-        makeCell(face,row,col);
-      }
-    }
-  }
+function applyCameraPosition(){
+ const w=stage.clientWidth||1,h=stage.clientHeight||1,narrow=w<760||w/h<.8;
+ const dist=Math.max(narrow?8.5:7.2,viewRadius*(narrow?3.15:2.65))/zoomFactor;
+ const dir=new THREE.Vector3(1,.86,1.04).normalize();camera.position.copy(dir.multiplyScalar(dist));camera.lookAt(0,0,0);
 }
-
-function playerColor(player) {
-  return player === P1 ? colors.p1 : colors.p2;
-}
-
-function setCellVisual(face,row,col) {
-  const k = key(face,row,col);
-  const mesh = cellMeshes.get(k);
-  if (!mesh) return;
-
-  const val = board[k];
-
-  let color = val ? playerColor(val) : colors.face;
-
-  if (winningKeys.has(k)) {
-    color = colors.win;
-  } else if (
-    selected &&
-    selected.face === face &&
-    selected.row === row &&
-    selected.col === col
-  ) {
-    color = colors.select;
-  }
-
-  mesh.material.color.setHex(color);
-}
-
-function refreshAll() {
-  for (const face of faceNames) {
-    for (let row=0; row<N; row++) {
-      for (let col=0; col<N; col++) {
-        setCellVisual(face,row,col);
-      }
-    }
-  }
-}
-
-function updateStatus(text=null) {
-  if (text) {
-    statusEl.innerHTML = text;
-    return;
-  }
-
-  const col = currentPlayer === P1 ? `#${colors.p1.toString(16).padStart(6,'0')}` : `#${colors.p2.toString(16).padStart(6,'0')}`;
-
-  let label;
-  if (gameMode === 'solo') {
-    label = currentPlayer === P1 ? 'Your turn' : 'Computer thinking...';
-  } else {
-    label = `Player ${currentPlayer}'s turn`;
-  }
-
-  statusEl.innerHTML =
-    `<span class="dot" style="background:${col}"></span>` +
-    label;
-}
-
-
-function findFaceByNormal(vec) {
-  let best = null;
-  let bestDot = -Infinity;
-
-  for (const face of faceNames) {
-    const d = V(FACES[face].n).dot(vec);
-
-    if (d > bestDot) {
-      bestDot = d;
-      best = face;
-    }
-  }
-
-  return best;
-}
-
-function rotateQuarter(v,axis,oldNormal,newNormal) {
-  const plus = v.clone().applyAxisAngle(axis, Math.PI/2);
-  const minus = v.clone().applyAxisAngle(axis, -Math.PI/2);
-
-  const oldN = oldNormal.clone();
-
-  const pN = oldN.clone().applyAxisAngle(axis, Math.PI/2);
-  const mN = oldN.clone().applyAxisAngle(axis, -Math.PI/2);
-
-  return pN.dot(newNormal) > mN.dot(newNormal)
-    ? plus
-    : minus;
-}
-
-function stepCell(state) {
-  const {face,row,col,dr,dc} = state;
-
-  let nr = row + dr;
-  let nc = col + dc;
-
-  if (
-    nr >= 0 && nr < N &&
-    nc >= 0 && nc < N
-  ) {
-    return {
-      face,
-      row:nr,
-      col:nc,
-      dr,
-      dc
-    };
-  }
-
-  const b = FACES[face];
-
-  const n = V(b.n);
-  const rv = V(b.r);
-  const dv = V(b.d);
-
-  const move =
-    rv.clone().multiplyScalar(dc)
-      .add(dv.clone().multiplyScalar(dr));
-
-  const crossRow = nr < 0 || nr >= N;
-  const crossCol = nc < 0 || nc >= N;
-
-  /*
-    A single diagonal step that exits through both row and column
-    simultaneously would pass exactly through a cube vertex.
-    That is not treated as an unambiguous edge continuation.
-  */
-  if (crossRow && crossCol) return null;
-
-  let edgeOut;
-  let axis;
-
-  if (crossCol) {
-    edgeOut = rv.clone().multiplyScalar(nc < 0 ? -1 : 1);
-    axis = dv.clone();
-  } else {
-    edgeOut = dv.clone().multiplyScalar(nr < 0 ? -1 : 1);
-    axis = rv.clone();
-  }
-
-  const nextFace = findFaceByNormal(edgeOut);
-  const nb = FACES[nextFace];
-
-  const nn = V(nb.n);
-  const nrv = V(nb.r);
-  const ndv = V(nb.d);
-
-  const moved2 = rotateQuarter(
-    move,
-    axis.clone().normalize(),
-    n,
-    nn
-  );
-
-  const ndc = signRound(moved2.dot(nrv));
-  const ndr = signRound(moved2.dot(ndv));
-
-  if (ndr === 0 && ndc === 0) return null;
-
-  const p = worldPoint(face,row,col,0);
-
-  let edgeCenter;
-
-  if (crossCol) {
-    const s = nc < 0 ? -1 : 1;
-
-    edgeCenter =
-      n.clone().multiplyScalar(getHalf())
-        .add(rv.clone().multiplyScalar(s * getHalf()))
-        .add(
-          dv.clone().multiplyScalar(
-            (row - (N-1)/2) * CELL
-          )
-        );
-  } else {
-    const s = nr < 0 ? -1 : 1;
-
-    edgeCenter =
-      n.clone().multiplyScalar(getHalf())
-        .add(dv.clone().multiplyScalar(s * getHalf()))
-        .add(
-          rv.clone().multiplyScalar(
-            (col - (N-1)/2) * CELL
-          )
-        );
-  }
-
-  const targetFlat =
-    p.clone().add(move.clone().multiplyScalar(CELL));
-
-  const rel = targetFlat.clone().sub(edgeCenter);
-
-  const folded =
-    rotateQuarter(
-      rel,
-      axis.clone().normalize(),
-      n,
-      nn
-    ).add(edgeCenter);
-
-  const cc =
-    Math.round(
-      folded.dot(nrv) / CELL + (N-1)/2
-    );
-
-  const rr =
-    Math.round(
-      folded.dot(ndv) / CELL + (N-1)/2
-    );
-
-  if (
-    rr < 0 || rr >= N ||
-    cc < 0 || cc >= N
-  ) {
-    return null;
-  }
-
-  return {
-    face:nextFace,
-    row:rr,
-    col:cc,
-    dr:ndr,
-    dc:ndc
-  };
-}
-
-const BASE_DIRS = [
-  {dr:0, dc:1},
-  {dr:1, dc:0},
-  {dr:1, dc:1},
-  {dr:1, dc:-1}
-];
-
-function walkSamePlayer(start,dir,player,maxSteps=40) {
-  const out = [];
-
-  let state = {
-    ...start,
-    ...dir
-  };
-
-  const seen = new Set([
-    key(start.face,start.row,start.col)
-  ]);
-
-  for (let i=0; i<maxSteps; i++) {
-    state = stepCell(state);
-
-    if (!state) break;
-
-    const k = key(
-      state.face,
-      state.row,
-      state.col
-    );
-
-    if (seen.has(k)) break;
-
-    seen.add(k);
-
-    if (board[k] !== player) break;
-
-    out.push({
-      face:state.face,
-      row:state.row,
-      col:state.col,
-      key:k
-    });
-  }
-
-  return out;
-}
-
-function checkWinFrom(face,row,col,player) {
-  const origin = {
-    face,
-    row,
-    col,
-    key:key(face,row,col)
-  };
-
-  for (const dir of BASE_DIRS) {
-    const forward =
-      walkSamePlayer(
-        origin,
-        dir,
-        player
-      );
-
-    const backward =
-      walkSamePlayer(
-        origin,
-        {
-          dr:-dir.dr,
-          dc:-dir.dc
-        },
-        player
-      );
-
-    const line = [
-      ...backward.reverse(),
-      origin,
-      ...forward
-    ];
-
-    if (line.length >= WIN_LENGTH) {
-      return line;
-    }
-  }
-
-  return null;
-}
-
-function updateHistoryButtons() {
-  undoBtn.disabled = moveHistory.length === 0 || aiThinking;
-  redoBtn.disabled = redoStack.length === 0 || aiThinking;
-}
-
-function place(face,row,col) {
-  if (gameOver || aiThinking) return;
-  if (gameMode === 'solo' && currentPlayer === P2) return;
-
-  const k = key(face,row,col);
-
-  if (board[k] !== 0) return;
-
-  const placedBy = currentPlayer;
-
-  // A new move creates a new branch, so previously undone moves
-  // are no longer redoable.
-  redoStack = [];
-
-  board[k] = placedBy;
-
-  moveHistory.push({
-    face,
-    row,
-    col,
-    player: placedBy
-  });
-
-  selected = null;
-  placeBtn.disabled = true;
-
-  const win =
-    checkWinFrom(
-      face,
-      row,
-      col,
-      placedBy
-    );
-
-  if (win) {
-    gameOver = true;
-
-    winningKeys = new Set(
-      win.map(x => x.key)
-    );
-
-    refreshAll();
-    updateHistoryButtons();
-
-    const col =
-      placedBy === P1
-        ? '#ff5b5b'
-        : '#4aa3ff';
-
-    updateStatus(
-      `<span class="dot" style="background:${col}"></span>` +
-      `Player ${placedBy} wins!`
-    );
-
-    return;
-  }
-
-  currentPlayer =
-    placedBy === P1
-      ? P2
-      : P1;
-
-  refreshAll();
-  updateStatus();
-  updateHistoryButtons();
-
-  if (gameMode === 'solo' && currentPlayer === P2 && !gameOver) {
-    scheduleComputerMove();
-  }
-}
-
-function undoMove() {
-  if (moveHistory.length === 0 || aiThinking) return;
-
-  function undoOne() {
-    if (moveHistory.length === 0) return null;
-
-    const move = moveHistory.pop();
-    board[key(move.face, move.row, move.col)] = 0;
-    redoStack.push(move);
-    return move;
-  }
-
-  let move = undoOne();
-  if (!move) return;
-
-  // In solo mode, undo a complete human+computer round when possible.
-  if (gameMode === 'solo' && move.player === P2 && moveHistory.length > 0) {
-    const previous = moveHistory[moveHistory.length - 1];
-    if (previous.player === P1) {
-      move = undoOne();
-    }
-  }
-
-  gameOver = false;
-  winningKeys.clear();
-  selected = null;
-  placeBtn.disabled = true;
-  currentPlayer = P1;
-
-  refreshAll();
-  updateStatus();
-  updateHistoryButtons();
-}
-
-function redoMove() {
-  if (redoStack.length === 0 || gameOver || aiThinking) return;
-
-  const move = redoStack.pop();
-  const k = key(move.face, move.row, move.col);
-
-  if (board[k] !== 0) {
-    updateHistoryButtons();
-    return;
-  }
-
-  currentPlayer = move.player;
-  board[k] = move.player;
-  moveHistory.push(move);
-
-  selected = null;
-  placeBtn.disabled = true;
-
-  const win =
-    checkWinFrom(
-      move.face,
-      move.row,
-      move.col,
-      move.player
-    );
-
-  if (win) {
-    gameOver = true;
-
-    winningKeys = new Set(
-      win.map(x => x.key)
-    );
-
-    refreshAll();
-    updateHistoryButtons();
-
-    const col =
-      move.player === P1
-        ? '#ff5b5b'
-        : '#4aa3ff';
-
-    updateStatus(
-      `<span class="dot" style="background:${col}"></span>` +
-      `Player ${move.player} wins!`
-    );
-
-    return;
-  }
-
-  currentPlayer =
-    move.player === P1
-      ? P2
-      : P1;
-
-  refreshAll();
-  updateStatus();
-  updateHistoryButtons();
-}
-
-function getEmptyCells() {
-  const cells = [];
-  for (const face of faceNames) {
-    for (let row = 0; row < N; row++) {
-      for (let col = 0; col < N; col++) {
-        if (board[key(face,row,col)] === 0) {
-          cells.push({face,row,col});
-        }
-      }
-    }
-  }
-  return cells;
-}
-
-function wouldWin(move, player) {
-  const k = key(move.face, move.row, move.col);
-  if (board[k] !== 0) return false;
-
-  board[k] = player;
-  const win = checkWinFrom(move.face, move.row, move.col, player);
-  board[k] = 0;
-
-  return !!win;
-}
-
-function evaluateMove(move, player) {
-  const opponent = player === P1 ? P2 : P1;
-  const k = key(move.face, move.row, move.col);
-
-  board[k] = player;
-
-  let score = 0;
-
-  if (checkWinFrom(move.face, move.row, move.col, player)) {
-    score += 100000;
-  }
-
-  for (const dir of BASE_DIRS) {
-    const origin = {
-      face: move.face,
-      row: move.row,
-      col: move.col,
-      key: k
-    };
-
-    const f = walkSamePlayer(origin, dir, player).length;
-    const b = walkSamePlayer(origin, {dr:-dir.dr, dc:-dir.dc}, player).length;
-    const total = 1 + f + b;
-
-    score += total * total * 20;
-  }
-
-  board[k] = 0;
-
-  if (wouldWin(move, opponent)) {
-    score += 50000;
-  }
-
-  // Mild preference for central cells on a face.
-  const center = (N - 1) / 2;
-  const dist = Math.abs(move.row - center) + Math.abs(move.col - center);
-  score += Math.max(0, 6 - dist);
-
-  return score;
-}
-
-
-function lineStrengthFor(move, player) {
-  const k = key(move.face, move.row, move.col);
-  if (board[k] !== 0) return -Infinity;
-  board[k] = player;
-
-  let best = 0;
-  let total = 0;
-  for (const dir of BASE_DIRS) {
-    const origin = {face:move.face,row:move.row,col:move.col,key:k};
-    const f = walkSamePlayer(origin, dir, player).length;
-    const b = walkSamePlayer(origin, {dr:-dir.dr,dc:-dir.dc}, player).length;
-    const run = 1 + f + b;
-    best = Math.max(best, run);
-    total += run * run;
-  }
-
-  board[k] = 0;
-  return best * 1000 + total;
-}
-
-function strongestHumanThreatScore() {
-  let strongest = 0;
-  for (const move of getEmptyCells()) {
-    strongest = Math.max(strongest, lineStrengthFor(move, P1));
-  }
-  return strongest;
-}
-
-function hardDefensiveScore(move) {
-  const k = key(move.face, move.row, move.col);
-  const blockedThreat = lineStrengthFor(move, P1);
-
-  board[k] = P2;
-  const remainingThreat = strongestHumanThreatScore();
-  board[k] = 0;
-
-  const ownAttack = evaluateMove(move, P2);
-
-  return blockedThreat * 3.5 - remainingThreat * 5.0 + ownAttack * 0.20;
-}
-
-function chooseComputerMove() {
-  const empty = getEmptyCells();
-  if (empty.length === 0) return null;
-
-  // Always take an immediate win if available.
-  for (const move of empty) {
-    if (wouldWin(move, P2)) return move;
-  }
-
-  if (difficulty === 'easy') {
-    // Easy: mostly random, with occasional blocking.
-    const urgentBlocks = empty.filter(move => wouldWin(move, P1));
-    if (urgentBlocks.length && Math.random() < 0.55) {
-      return urgentBlocks[Math.floor(Math.random() * urgentBlocks.length)];
-    }
-    return empty[Math.floor(Math.random() * empty.length)];
-  }
-
-  // Medium/Hard always block an immediate human win.
-  for (const move of empty) {
-    if (wouldWin(move, P1)) return move;
-  }
-
-  if (difficulty === 'medium') {
-    // Medium: score all moves but add randomness among good options.
-    const scored = empty
-      .map(move => ({move, score:evaluateMove(move, P2)}))
-      .sort((a,b) => b.score - a.score);
-
-    const top = scored.slice(0, Math.min(5, scored.length));
-    return top[Math.floor(Math.random() * top.length)].move;
-  }
-
-  // Hard: intentionally defense-first.
-  // Immediate wins and immediate blocks are handled above.
-  let bestMove = empty[0];
-  let bestScore = -Infinity;
-
-  for (const move of empty) {
-    const score = hardDefensiveScore(move);
-    if (score > bestScore) {
-      bestScore = score;
-      bestMove = move;
-    }
-  }
-
-  return bestMove;
-}
-
-function computerPlace(move) {
-  if (!move || gameOver) return;
-
-  const k = key(move.face, move.row, move.col);
-  if (board[k] !== 0) return;
-
-  board[k] = P2;
-  moveHistory.push({
-    face:move.face,
-    row:move.row,
-    col:move.col,
-    player:P2
-  });
-  redoStack = [];
-
-  const win = checkWinFrom(move.face, move.row, move.col, P2);
-
-  if (win) {
-    gameOver = true;
-    winningKeys = new Set(win.map(x => x.key));
-    currentPlayer = P2;
-
-    refreshAll();
-    updateHistoryButtons();
-
-    updateStatus(
-      `<span class="dot" style="background:#4aa3ff"></span>` +
-      `Computer wins!`
-    );
-
-    return;
-  }
-
-  currentPlayer = P1;
-  refreshAll();
-  updateStatus();
-  updateHistoryButtons();
-}
-
-function scheduleComputerMove() {
-  if (gameMode !== 'solo' || currentPlayer !== P2 || gameOver || aiThinking) return;
-
-  aiThinking = true;
-  placeBtn.disabled = true;
-  updateStatus();
-  updateHistoryButtons();
-
-  // Small delay so the computer move feels deliberate and the UI can repaint.
-  setTimeout(() => {
-    const move = chooseComputerMove();
-    computerPlace(move);
-    aiThinking = false;
-    updateHistoryButtons();
-  }, 350);
-}
-
-
-function selectCell(hit) {
-  if (gameOver || aiThinking) return;
-  if (gameMode === 'solo' && currentPlayer === P2) return;
-
-  const {face,row,col} = hit.userData;
-
-  if (
-    board[key(face,row,col)] !== 0
-  ) {
-    return;
-  }
-
-  selected = {
-    face,
-    row,
-    col
-  };
-
-  placeBtn.disabled = false;
-
-  refreshAll();
-}
-
-function resetGame(resetRotation=false) {
-  currentPlayer = P1;
-  gameOver = false;
-  aiThinking = false;
-  selected = null;
-  winningKeys.clear();
-  moveHistory = [];
-  redoStack = [];
-  placeBtn.disabled = true;
-
-  for (const k in board) {
-    board[k] = 0;
-  }
-
-  if (resetRotation) {
-    cubeGroup.rotation.set(
-      -0.35,
-      0.55,
-      0.08
-    );
-  }
-
-  refreshAll();
-  updateStatus();
-  updateHistoryButtons();
-}
-
-function changeBoardSize(newSize) {
-  N = Number(newSize);
-
-  // Win condition is always five consecutive tiles,
-  // regardless of whether the cube is 3x3, 4x4, or 5x5.
-  buildBoard();
-  resetGame(true);
-}
-
-placeBtn.addEventListener(
-  'click',
-  () => {
-    if (selected) {
-      place(
-        selected.face,
-        selected.row,
-        selected.col
-      );
-    }
-  }
-);
-
-undoBtn.addEventListener(
-  'click',
-  undoMove
-);
-
-redoBtn.addEventListener(
-  'click',
-  redoMove
-);
-
-resetBtn.addEventListener(
-  'click',
-  () => resetGame(true)
-);
-
-zoomInBtn.addEventListener('click', () => zoomBy(1.18));
-zoomOutBtn.addEventListener('click', () => zoomBy(1 / 1.18));
-
-canvas.addEventListener(
-  'wheel',
-  e => {
-    e.preventDefault();
-    zoomBy(e.deltaY < 0 ? 1.08 : 1 / 1.08);
-  },
-  { passive:false }
-);
-
-sizeSelect.addEventListener(
-  'change',
-  () => changeBoardSize(sizeSelect.value)
-);
-
-modeSelect.addEventListener(
-  'change',
-  () => {
-    gameMode = modeSelect.value;
-    difficultySelect.style.display = gameMode === 'solo' ? '' : 'none';
-    resetGame(true);
-  }
-);
-
-difficultySelect.addEventListener(
-  'change',
-  () => {
-    difficulty = difficultySelect.value;
-    resetGame(true);
-  }
-);
-
-themeSelect.addEventListener(
-  'change',
-  () => applyTheme(themeSelect.value)
-);
-
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
-
-function pickCell(clientX,clientY) {
-  const rect = canvas.getBoundingClientRect();
-
-  pointer.x =
-    ((clientX - rect.left) / rect.width) * 2 - 1;
-
-  pointer.y =
-    -((clientY - rect.top) / rect.height) * 2 + 1;
-
-  raycaster.setFromCamera(pointer,camera);
-
-  // Raycast against both visible cells and the solid cube core.
-  // The nearest intersection determines what was actually clicked:
-  // - cell => valid placement/selection
-  // - core => the click landed in a visual gap, so ignore it
-  //
-  // This also prevents rays from passing through gaps to the far side.
-  const targets = [...cellMeshes.values()];
-  if (core) targets.push(core);
-
-  const hits = raycaster.intersectObjects(targets, false);
-
-  if (!hits.length) return null;
-
-  const nearest = hits[0].object;
-
-  return nearest.userData?.kind === 'cell'
-    ? nearest
-    : null;
-}
-
-function rotateCubeByDrag(dx, dy) {
-  const sensitivity = 0.009;
-
-  const cameraRight = new THREE.Vector3(1, 0, 0)
-    .applyQuaternion(camera.quaternion)
-    .normalize();
-
-  const cameraUp = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(camera.quaternion)
-    .normalize();
-
-  const yaw = new THREE.Quaternion().setFromAxisAngle(
-    cameraUp,
-    dx * sensitivity
-  );
-
-  const pitch = new THREE.Quaternion().setFromAxisAngle(
-    cameraRight,
-    dy * sensitivity
-  );
-
-  // Apply rotations in world/camera space so drag directions remain
-  // intuitive even when the cube has been turned upside-down.
-  cubeGroup.quaternion.premultiply(yaw);
-  cubeGroup.quaternion.premultiply(pitch);
-  cubeGroup.quaternion.normalize();
-}
-
-let dragging = false;
-let moved = false;
-let activePointerId = null;
-let downX = 0;
-let downY = 0;
-let lastX = 0;
-let lastY = 0;
-const TAP_MOVE_THRESHOLD = 10;
-
-function isTouchLikeEvent(e) {
-  return e.pointerType === 'touch' || e.pointerType === 'pen';
-}
-
-canvas.addEventListener('pointerdown', e => {
-  if (activePointerId !== null) return;
-  activePointerId = e.pointerId;
-  dragging = true;
-  moved = false;
-  downX = lastX = e.clientX;
-  downY = lastY = e.clientY;
-  try { canvas.setPointerCapture(e.pointerId); } catch {}
-  if (isTouchLikeEvent(e)) e.preventDefault();
-}, { passive:false });
-
-canvas.addEventListener('pointermove', e => {
-  if (!dragging || e.pointerId !== activePointerId) return;
-  const dx = e.clientX - lastX;
-  const dy = e.clientY - lastY;
-  if (Math.hypot(e.clientX-downX,e.clientY-downY) > TAP_MOVE_THRESHOLD) moved = true;
-  if (moved) {
-    rotateCubeByDrag(dx, dy);
-  }
-  lastX = e.clientX;
-  lastY = e.clientY;
-  if (isTouchLikeEvent(e)) e.preventDefault();
-}, { passive:false });
-
-function finishPointer(e, cancelled=false) {
-  if (e.pointerId !== activePointerId) return;
-  const wasMoved = moved;
-  dragging = false;
-  activePointerId = null;
-  try { canvas.releasePointerCapture(e.pointerId); } catch {}
-  if (!cancelled && !wasMoved && isTouchLikeEvent(e)) {
-    const hit = pickCell(e.clientX,e.clientY);
-    if (hit) selectCell(hit);
-  }
-}
-
-canvas.addEventListener('pointerup', e => {
-  finishPointer(e,false);
-  if (isTouchLikeEvent(e)) e.preventDefault();
-}, { passive:false });
-canvas.addEventListener('pointercancel', e => finishPointer(e,true));
-
-canvas.addEventListener('dblclick', e => {
-  if (e.pointerType === 'touch') return;
-  const hit = pickCell(e.clientX,e.clientY);
-  if (!hit) return;
-  const {face,row,col} = hit.userData;
-  place(face,row,col);
-});
-
-canvas.addEventListener('contextmenu', e => e.preventDefault());
-
-function applyCameraPosition() {
-  const w = stage.clientWidth || 1;
-  const h = stage.clientHeight || 1;
-
-  const narrow = w < 700 || w / Math.max(h, 1) < 0.8;
-  const baseDistance = narrow ? 11.5 : 8.5;
-  const distance = baseDistance / zoomFactor;
-
-  const dir = new THREE.Vector3(1, 0.88, 1.03).normalize();
-  camera.position.copy(dir.multiplyScalar(distance));
-  camera.lookAt(0,0,0);
-}
-
-function setZoom(value) {
-  zoomFactor = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
-  applyCameraPosition();
-}
-
-function zoomBy(multiplier) {
-  setZoom(zoomFactor * multiplier);
-}
-
-function resize() {
-  const w = stage.clientWidth;
-  const h = stage.clientHeight;
-
-  renderer.setSize(w,h,false);
-  camera.aspect = w / h;
-  applyCameraPosition();
-  camera.updateProjectionMatrix();
-}
-
-addEventListener(
-  'resize',
-  resize
-);
-
-cubeGroup.rotation.set(
-  -0.35,
-  0.55,
-  0.08
-);
-
-gameMode = modeSelect.value;
-difficulty = difficultySelect.value;
-difficultySelect.style.display = gameMode === 'solo' ? '' : 'none';
-buildBoard();
-applyTheme(themeSelect.value);
-resetGame(false);
-resize();
-
-function animate() {
-  requestAnimationFrame(animate);
-  renderer.render(scene,camera);
-}
-
-animate();
+function setZoom(z){zoomFactor=Math.max(.55,Math.min(1.9,z));applyCameraPosition()}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;applyCameraPosition();camera.updateProjectionMatrix()}
+addEventListener('resize',resize);
+zoomInBtn.addEventListener('click',()=>setZoom(zoomFactor*1.18));zoomOutBtn.addEventListener('click',()=>setZoom(zoomFactor/1.18));
+canvas.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoomFactor*(e.deltaY<0?1.08:1/1.08))},{passive:false});
+
+placeBtn.addEventListener('click',()=>{if(selected)place(selected.face,selected.row,selected.col)});
+undoBtn.addEventListener('click',undoMove);redoBtn.addEventListener('click',redoMove);resetBtn.addEventListener('click',()=>resetGame(true));
+shapeSelect.addEventListener('change',()=>{buildSelectedShape();resetGame(true)});
+modeSelect.addEventListener('change',()=>{gameMode=modeSelect.value;difficultySelect.style.display=gameMode==='solo'?'':'none';resetGame(true)});
+difficultySelect.addEventListener('change',()=>{difficulty=difficultySelect.value;resetGame(true)});
+themeSelect.addEventListener('change',()=>applyTheme(themeSelect.value));
+
+gameMode=modeSelect.value;difficulty=difficultySelect.value;buildSelectedShape();resetGame(true);resize();
+(function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)})();
 </script>
 </body>
 </html>
