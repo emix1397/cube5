@@ -277,6 +277,7 @@ scene.add(cubeGroup);
 
 const board = {};
 const cellMeshes = new Map();
+const hitMeshes = new Map();
 
 let currentPlayer = P1;
 let gameOver = false;
@@ -325,6 +326,7 @@ function clearCubeGroup() {
     disposeObject3D(child);
   }
   cellMeshes.clear();
+  hitMeshes.clear();
   clearObject(board);
 }
 
@@ -349,16 +351,16 @@ function makeCell(face,row,col) {
   const r = V(b.r);
   const d = V(b.d);
 
-  const geom = new THREE.PlaneGeometry(getTileSize(), getTileSize());
+  const visualGeom = new THREE.PlaneGeometry(getTileSize(), getTileSize());
 
-  const mat = new THREE.MeshStandardMaterial({
+  const visualMat = new THREE.MeshStandardMaterial({
     color:colors.face,
     roughness:0.8,
     metalness:0.04,
     side:THREE.DoubleSide
   });
 
-  const mesh = new THREE.Mesh(geom, mat);
+  const mesh = new THREE.Mesh(visualGeom, visualMat);
 
   const m = new THREE.Matrix4().makeBasis(
     r,
@@ -381,8 +383,31 @@ function makeCell(face,row,col) {
   const k = key(face,row,col);
   cellMeshes.set(k, mesh);
   board[k] = 0;
-}
 
+  // Continuous invisible hit target covering the entire logical cell.
+  // This closes the tiny visual gaps for hit-testing only, so a ray
+  // cannot slip through and hit a cell on the opposite side.
+  const hitGeom = new THREE.PlaneGeometry(CELL, CELL);
+  const hitMat = new THREE.MeshBasicMaterial({
+    transparent:true,
+    opacity:0,
+    side:THREE.DoubleSide,
+    depthWrite:false
+  });
+
+  const hitMesh = new THREE.Mesh(hitGeom, hitMat);
+  hitMesh.setRotationFromMatrix(m);
+  hitMesh.position.copy(worldPoint(face,row,col,0.04));
+  hitMesh.userData = {
+    kind:'hitcell',
+    face,
+    row,
+    col
+  };
+
+  cubeGroup.add(hitMesh);
+  hitMeshes.set(k, hitMesh);
+}
 function buildBoard() {
   clearCubeGroup();
 
@@ -1229,8 +1254,7 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 function pickCell(clientX,clientY) {
-  const rect =
-    canvas.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
 
   pointer.x =
     ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -1242,43 +1266,17 @@ function pickCell(clientX,clientY) {
 
   const hits =
     raycaster.intersectObjects(
-      [...cellMeshes.values()],
+      [...hitMeshes.values()],
       false
     );
 
+  // Three.js returns intersections nearest-first.
+  // Using the full-size invisible targets means gaps no longer
+  // expose cells on the back side of the cube.
   return hits.length
     ? hits[0].object
     : null;
 }
-
-function rotateCubeByDrag(dx, dy) {
-  const sensitivity = 0.009;
-
-  // Derive axes from the camera, not from the cube's current local axes.
-  // This keeps drag directions intuitive even when the cube is upside-down.
-  const cameraRight = new THREE.Vector3(1, 0, 0)
-    .applyQuaternion(camera.quaternion)
-    .normalize();
-
-  const cameraUp = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(camera.quaternion)
-    .normalize();
-
-  const yaw = new THREE.Quaternion().setFromAxisAngle(
-    cameraUp,
-    dx * sensitivity
-  );
-
-  const pitch = new THREE.Quaternion().setFromAxisAngle(
-    cameraRight,
-    dy * sensitivity
-  );
-
-  cubeGroup.quaternion.premultiply(yaw);
-  cubeGroup.quaternion.premultiply(pitch);
-  cubeGroup.quaternion.normalize();
-}
-
 let dragging = false;
 let moved = false;
 let activePointerId = null;
