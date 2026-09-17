@@ -139,6 +139,11 @@
         <option value="medium">Medium</option>
         <option value="hard">Hard</option>
       </select>
+      <select id="themeSelect" aria-label="Theme">
+        <option value="classic" selected>Classic</option>
+        <option value="neon">Neon</option>
+        <option value="light">Light</option>
+      </select>
 
       <div id="status" class="status"></div>
       <button id="undoBtn" disabled>Undo</button>
@@ -178,6 +183,37 @@ const colors = {
   win: 0x6ef29c
 };
 
+const THEMES = {
+  classic: {
+    css: {'--bg':'#111318','--panel':'#1c2028','--panel2':'#252b35','--text':'#f2f4f8','--muted':'#aab3c0','--p1':'#ff5b5b','--p2':'#4aa3ff','--accent':'#ffd166'},
+    sceneBg:0x111318, face:0x343b48, core:0x20252d, p1:0xff5b5b, p2:0x4aa3ff, select:0xffd166, win:0x6ef29c
+  },
+  neon: {
+    css: {'--bg':'#05070d','--panel':'#0d1220','--panel2':'#131b2d','--text':'#f5fbff','--muted':'#93a6bd','--p1':'#ff3cf0','--p2':'#00e5ff','--accent':'#c9ff2f'},
+    sceneBg:0x05070d, face:0x182136, core:0x0b1020, p1:0xff3cf0, p2:0x00e5ff, select:0xc9ff2f, win:0x65ff87
+  },
+  light: {
+    css: {'--bg':'#e9edf3','--panel':'#f7f9fc','--panel2':'#dfe5ee','--text':'#1b2430','--muted':'#5e6a78','--p1':'#d63b3b','--p2':'#2d78d0','--accent':'#e8b125'},
+    sceneBg:0xe9edf3, face:0xb8c1cc, core:0x909aa6, p1:0xd63b3b, p2:0x2d78d0, select:0xe8b125, win:0x31a866
+  }
+};
+
+function applyTheme(name) {
+  const theme = THEMES[name] || THEMES.classic;
+  for (const [prop,value] of Object.entries(theme.css)) {
+    document.documentElement.style.setProperty(prop, value);
+  }
+  colors.face = theme.face;
+  colors.p1 = theme.p1;
+  colors.p2 = theme.p2;
+  colors.select = theme.select;
+  colors.win = theme.win;
+  renderer.setClearColor(theme.sceneBg, 1);
+  if (core && core.material) core.material.color.setHex(theme.core);
+  refreshAll();
+  updateStatus();
+}
+
 const FACES = {
   F: { n:[ 0, 0, 1], r:[ 1, 0, 0], d:[ 0,-1, 0] },
   B: { n:[ 0, 0,-1], r:[-1, 0, 0], d:[ 0,-1, 0] },
@@ -212,6 +248,7 @@ const redoBtn = document.getElementById('redoBtn');
 const sizeSelect = document.getElementById('sizeSelect');
 const modeSelect = document.getElementById('modeSelect');
 const difficultySelect = document.getElementById('difficultySelect');
+const themeSelect = document.getElementById('themeSelect');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 
@@ -411,7 +448,7 @@ function updateStatus(text=null) {
     return;
   }
 
-  const col = currentPlayer === P1 ? '#ff5b5b' : '#4aa3ff';
+  const col = currentPlayer === P1 ? `#${colors.p1.toString(16).padStart(6,'0')}` : `#${colors.p2.toString(16).padStart(6,'0')}`;
 
   let label;
   if (gameMode === 'solo') {
@@ -914,6 +951,48 @@ function evaluateMove(move, player) {
   return score;
 }
 
+
+function lineStrengthFor(move, player) {
+  const k = key(move.face, move.row, move.col);
+  if (board[k] !== 0) return -Infinity;
+  board[k] = player;
+
+  let best = 0;
+  let total = 0;
+  for (const dir of BASE_DIRS) {
+    const origin = {face:move.face,row:move.row,col:move.col,key:k};
+    const f = walkSamePlayer(origin, dir, player).length;
+    const b = walkSamePlayer(origin, {dr:-dir.dr,dc:-dir.dc}, player).length;
+    const run = 1 + f + b;
+    best = Math.max(best, run);
+    total += run * run;
+  }
+
+  board[k] = 0;
+  return best * 1000 + total;
+}
+
+function strongestHumanThreatScore() {
+  let strongest = 0;
+  for (const move of getEmptyCells()) {
+    strongest = Math.max(strongest, lineStrengthFor(move, P1));
+  }
+  return strongest;
+}
+
+function hardDefensiveScore(move) {
+  const k = key(move.face, move.row, move.col);
+  const blockedThreat = lineStrengthFor(move, P1);
+
+  board[k] = P2;
+  const remainingThreat = strongestHumanThreatScore();
+  board[k] = 0;
+
+  const ownAttack = evaluateMove(move, P2);
+
+  return blockedThreat * 3.5 - remainingThreat * 5.0 + ownAttack * 0.20;
+}
+
 function chooseComputerMove() {
   const empty = getEmptyCells();
   if (empty.length === 0) return null;
@@ -947,27 +1026,13 @@ function chooseComputerMove() {
     return top[Math.floor(Math.random() * top.length)].move;
   }
 
-  // Hard: one-ply offensive/defensive heuristic with opponent reply penalty.
+  // Hard: intentionally defense-first.
+  // Immediate wins and immediate blocks are handled above.
   let bestMove = empty[0];
   let bestScore = -Infinity;
 
   for (const move of empty) {
-    let score = evaluateMove(move, P2);
-
-    board[key(move.face, move.row, move.col)] = P2;
-
-    const replies = getEmptyCells();
-    let worstReply = 0;
-
-    for (const reply of replies) {
-      const replyScore = evaluateMove(reply, P1);
-      if (replyScore > worstReply) worstReply = replyScore;
-    }
-
-    board[key(move.face, move.row, move.col)] = 0;
-
-    score -= worstReply * 0.75;
-
+    const score = hardDefensiveScore(move);
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
@@ -1155,6 +1220,11 @@ difficultySelect.addEventListener(
   }
 );
 
+themeSelect.addEventListener(
+  'change',
+  () => applyTheme(themeSelect.value)
+);
+
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -1321,6 +1391,7 @@ gameMode = modeSelect.value;
 difficulty = difficultySelect.value;
 difficultySelect.style.display = gameMode === 'solo' ? '' : 'none';
 buildBoard();
+applyTheme(themeSelect.value);
 resetGame(false);
 resize();
 
