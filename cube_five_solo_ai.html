@@ -53,11 +53,6 @@
     margin-right:7px;
     vertical-align:-1px;
   }
-  label {
-    color:var(--muted);
-    font-size:13px;
-    font-weight:700;
-  }
   select {
     background:var(--panel2);
     color:var(--text);
@@ -76,18 +71,6 @@
     width:100%;
     height:100%;
     touch-action:none;
-  }
-  #hint {
-    position:absolute;
-    left:12px;
-    bottom:12px;
-    padding:8px 10px;
-    border-radius:8px;
-    background:rgba(0,0,0,.45);
-    color:#dce2ea;
-    font-size:13px;
-    pointer-events:none;
-    max-width:min(90vw, 700px);
   }
   footer {
     display:flex;
@@ -116,10 +99,6 @@
     opacity:.4;
     cursor:not-allowed;
   }
-  .legend {
-    color:var(--muted);
-    font-size:13px;
-  }
 
   @media (pointer:fine) {
     #placeBtn { display:none; }
@@ -131,11 +110,10 @@
     .title { width: 100%; text-align: center; font-size: 18px; }
     .topControls { width: 100%; justify-content: center; gap: 8px; }
     .status { width: 100%; text-align: center; order: 3; }
-    #hint { left: 8px; right: 8px; bottom: 8px; font-size: 12px; text-align: center; }
     footer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
     #placeBtn { min-width: 140px; min-height: 46px; font-size: 16px; }
-    .legend { width: 100%; text-align: center; font-size: 12px; }
     select, button { min-height: 42px; }
+    #zoomInBtn, #zoomOutBtn { min-width: 46px; font-size: 22px; line-height: 1; }
   }
 </style>
 </head>
@@ -145,31 +123,22 @@
     <div class="title">Cube Five</div>
 
     <div class="topControls">
-      <label>
-        Cube size
-        <select id="sizeSelect">
-          <option value="3" selected>3 × 3</option>
-          <option value="4">4 × 4</option>
-          <option value="5">5 × 5</option>
-        </select>
-      </label>
+      <select id="sizeSelect" aria-label="Cube size">
+        <option value="3" selected>3 × 3</option>
+        <option value="4">4 × 4</option>
+        <option value="5">5 × 5</option>
+      </select>
 
-      <label>
-        Game mode
-        <select id="modeSelect">
-          <option value="solo" selected>Solo vs Computer</option>
-          <option value="hotseat">Two-player Hot Seat</option>
-        </select>
-      </label>
+      <select id="modeSelect" aria-label="Game mode">
+        <option value="solo" selected>Solo vs Computer</option>
+        <option value="hotseat">Two-player Hot Seat</option>
+      </select>
 
-      <label id="difficultyLabel">
-        Difficulty
-        <select id="difficultySelect">
-          <option value="easy" selected>Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </label>
+      <select id="difficultySelect" aria-label="Difficulty">
+        <option value="easy" selected>Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
 
       <div id="status" class="status"></div>
       <button id="undoBtn" disabled>Undo</button>
@@ -180,14 +149,12 @@
 
   <div id="stage">
     <canvas id="game"></canvas>
-    <div id="hint">
-      Drag to rotate. Desktop: double-click an empty cell. Mobile: tap an empty cell to select it, then tap Place Tile.
-    </div>
   </div>
 
   <footer>
+    <button id="zoomOutBtn" aria-label="Zoom out">−</button>
     <button id="placeBtn" class="primary" disabled>Place Tile</button>
-    <div id="legend" class="legend"></div>
+    <button id="zoomInBtn" aria-label="Zoom in">+</button>
   </footer>
 </div>
 
@@ -245,8 +212,8 @@ const redoBtn = document.getElementById('redoBtn');
 const sizeSelect = document.getElementById('sizeSelect');
 const modeSelect = document.getElementById('modeSelect');
 const difficultySelect = document.getElementById('difficultySelect');
-const difficultyLabel = document.getElementById('difficultyLabel');
-const legendEl = document.getElementById('legend');
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
 
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -257,6 +224,10 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
 camera.position.set(8.2, 7.2, 8.5);
 camera.lookAt(0,0,0);
+
+let zoomFactor = 1.0;
+const MIN_ZOOM = 0.65;
+const MAX_ZOOM = 1.8;
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x263244, 2.1));
 
@@ -454,10 +425,6 @@ function updateStatus(text=null) {
     label;
 }
 
-function updateLegend() {
-  legendEl.textContent =
-    `First to make a straight run of ${WIN_LENGTH} wins — including lines that continue across cube edges. ${gameMode === 'solo' ? 'You are Player 1 (red).' : 'Hot-seat mode: Players 1 and 2 alternate.'}`;
-}
 
 function findFaceByNormal(vec) {
   let best = null;
@@ -1114,7 +1081,6 @@ function resetGame(resetRotation=false) {
 
   refreshAll();
   updateStatus();
-  updateLegend();
   updateHistoryButtons();
 }
 
@@ -1155,6 +1121,18 @@ resetBtn.addEventListener(
   () => resetGame(true)
 );
 
+zoomInBtn.addEventListener('click', () => zoomBy(1.18));
+zoomOutBtn.addEventListener('click', () => zoomBy(1 / 1.18));
+
+canvas.addEventListener(
+  'wheel',
+  e => {
+    e.preventDefault();
+    zoomBy(e.deltaY < 0 ? 1.08 : 1 / 1.08);
+  },
+  { passive:false }
+);
+
 sizeSelect.addEventListener(
   'change',
   () => changeBoardSize(sizeSelect.value)
@@ -1164,7 +1142,7 @@ modeSelect.addEventListener(
   'change',
   () => {
     gameMode = modeSelect.value;
-    difficultyLabel.style.display = gameMode === 'solo' ? '' : 'none';
+    difficultySelect.style.display = gameMode === 'solo' ? '' : 'none';
     resetGame(true);
   }
 );
@@ -1203,6 +1181,34 @@ function pickCell(clientX,clientY) {
     : null;
 }
 
+function rotateCubeByDrag(dx, dy) {
+  const sensitivity = 0.009;
+
+  // Derive axes from the camera, not from the cube's current local axes.
+  // This keeps drag directions intuitive even when the cube is upside-down.
+  const cameraRight = new THREE.Vector3(1, 0, 0)
+    .applyQuaternion(camera.quaternion)
+    .normalize();
+
+  const cameraUp = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(camera.quaternion)
+    .normalize();
+
+  const yaw = new THREE.Quaternion().setFromAxisAngle(
+    cameraUp,
+    dx * sensitivity
+  );
+
+  const pitch = new THREE.Quaternion().setFromAxisAngle(
+    cameraRight,
+    dy * sensitivity
+  );
+
+  cubeGroup.quaternion.premultiply(yaw);
+  cubeGroup.quaternion.premultiply(pitch);
+  cubeGroup.quaternion.normalize();
+}
+
 let dragging = false;
 let moved = false;
 let activePointerId = null;
@@ -1233,8 +1239,7 @@ canvas.addEventListener('pointermove', e => {
   const dy = e.clientY - lastY;
   if (Math.hypot(e.clientX-downX,e.clientY-downY) > TAP_MOVE_THRESHOLD) moved = true;
   if (moved) {
-    cubeGroup.rotation.y += dx * 0.009;
-    cubeGroup.rotation.x += dy * 0.009;
+    rotateCubeByDrag(dx, dy);
   }
   lastX = e.clientX;
   lastY = e.clientY;
@@ -1269,17 +1274,35 @@ canvas.addEventListener('dblclick', e => {
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-function resize() {
-  const w = stage.clientWidth;
-  const h = stage.clientHeight;
-  renderer.setSize(w,h,false);
-  camera.aspect = w / h;
+function applyCameraPosition() {
+  const w = stage.clientWidth || 1;
+  const h = stage.clientHeight || 1;
 
   const narrow = w < 700 || w / Math.max(h, 1) < 0.8;
-  const distance = narrow ? 11.5 : 8.5;
+  const baseDistance = narrow ? 11.5 : 8.5;
+  const distance = baseDistance / zoomFactor;
+
   const dir = new THREE.Vector3(1, 0.88, 1.03).normalize();
   camera.position.copy(dir.multiplyScalar(distance));
   camera.lookAt(0,0,0);
+}
+
+function setZoom(value) {
+  zoomFactor = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
+  applyCameraPosition();
+}
+
+function zoomBy(multiplier) {
+  setZoom(zoomFactor * multiplier);
+}
+
+function resize() {
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+
+  renderer.setSize(w,h,false);
+  camera.aspect = w / h;
+  applyCameraPosition();
   camera.updateProjectionMatrix();
 }
 
@@ -1296,7 +1319,7 @@ cubeGroup.rotation.set(
 
 gameMode = modeSelect.value;
 difficulty = difficultySelect.value;
-difficultyLabel.style.display = gameMode === 'solo' ? '' : 'none';
+difficultySelect.style.display = gameMode === 'solo' ? '' : 'none';
 buildBoard();
 resetGame(false);
 resize();
